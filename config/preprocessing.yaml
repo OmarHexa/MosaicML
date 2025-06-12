@@ -1,0 +1,7 @@
+preprocessing:
+  imputer:
+    target: sklearn.impute.SimpleImputer
+    params:
+      strategy: mean
+  scaler:
+    target: sklearn.preprocessing.StandardScaler

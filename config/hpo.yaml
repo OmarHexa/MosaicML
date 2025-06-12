@@ -1,0 +1,5 @@
+hpo:
+  enabled: true
+  n_trials: 30
+  direction: maximize
+  sampler: optuna.samplers.TPESampler

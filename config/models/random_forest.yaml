@@ -1,0 +1,10 @@
+models:
+  - name: random_forest
+    target: sklearn.ensemble.RandomForestClassifier
+    params:
+      n_estimators:
+        min: 50
+        max: 300
+      max_depth:
+        min: 3
+        max: 12
