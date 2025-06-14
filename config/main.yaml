@@ -10,3 +10,5 @@ defaults:
   - _self_ # this allows overriding the defaults in the main config file
 
 task_name: "iris" # name of the task, used in logging and output directories
+
+metric: ${hpo.metric}

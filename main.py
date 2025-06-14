@@ -1,5 +1,4 @@
 import hydra
-import joblib
 from omegaconf import DictConfig, OmegaConf
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
@@ -20,12 +19,8 @@ def main(cfg: DictConfig):
     auto_clf.fit(X_train, y_train)
     
     # Evaluate
-    test_score = auto_clf.evaluate(X_test, y_test)
-    print(f"\nTest {cfg.hpo.metric}: {test_score:.4f}")
-    
-    # Save best model
-    joblib.dump(auto_clf.best_model, "best_model.pkl")
-    print("\nSaved best model as 'best_model.pkl'")
+    score = auto_clf.evaluate(X_test, y_test)
+    print(f"Final score: {score:.4f}")
 
 if __name__ == "__main__":
     main()

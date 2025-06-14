@@ -1,4 +1,6 @@
-n_iter: 10
+_target_: sklearn.model_selection.RandomizedSearchCV
+param_space_arg: param_distributions
+n_iter: 20
 cv: 5
 verbose: 2
 random_state: 42
@@ -6,4 +8,4 @@ n_jobs: -1
 refit: True
 error_score: 'raise'
 return_train_score: True
-metric: 'accuracy'
+scoring: 'accuracy'

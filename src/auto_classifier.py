@@ -4,9 +4,12 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import get_scorer
 import numpy as np
 
+from src.hpo_adapter import get_hpo_adapter
+
 class AutoClassifier:
     def __init__(self, cfg: DictConfig):
         self.cfg = cfg
+        self.scoring_metric = cfg.hpo.scoring
         self.models = self._init_models()
         self.best_model = None
         self.best_score = -np.inf
@@ -27,31 +30,26 @@ class AutoClassifier:
 
     def fit(self, X, y):
         for model_info in self.models:
-            print(f"\nTraining {model_info['name']}...")
-            search = RandomizedSearchCV(
+            print(f"\nTraining {model_info['name']} with {self.cfg.hpo._target_}...")
+            
+            # Get HPO adapter for this model
+            hpo_adapter = get_hpo_adapter(
+                cfg=self.cfg,
                 estimator=model_info['instance'],
-                param_distributions=model_info['param_space'],
-                n_iter=self.cfg.hpo.n_iter,
-                cv=self.cfg.hpo.cv,
-                scoring=self.cfg.hpo.metric,
-                n_jobs=self.cfg.hpo.n_jobs,
-                error_score=self.cfg.hpo.error_score,
-                verbose=self.cfg.hpo.verbose,
-                random_state=self.cfg.hpo.random_state
+                param_space=model_info['param_space']
             )
             
-            search.fit(X, y)
+            hpo_adapter.fit(X, y)
             
-            if search.best_score_ > self.best_score:
-                self.best_score = search.best_score_
-                self.best_model = search.best_estimator_
+            if hpo_adapter.best_score_ > self.best_score:
+                self.best_score = hpo_adapter.best_score_
+                self.best_model = hpo_adapter.best_estimator_
                 self.best_model_name = model_info['name']
-                self.best_params = search.best_params_
-                
-        print(f"\nBest model: {self.best_model_name} with {self.cfg.hpo.metric}: {self.best_score:.4f}")
+                self.best_params = hpo_adapter.best_params_
+        print(f"\nBest model: {self.best_model_name} with {self.scoring_metric}: {self.best_score:.4f}")
         print(f"Best parameters: {self.best_params}")
 
     def evaluate(self, X, y):
-        scorer = get_scorer(self.cfg.hpo.metric)
+        scorer = get_scorer(self.scoring_metric)
         return scorer(self.best_model, X, y)
 
