@@ -1,6 +1,5 @@
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import get_scorer
 import numpy as np
 
@@ -31,14 +30,12 @@ class AutoClassifier:
     def fit(self, X, y):
         for model_info in self.models:
             print(f"\nTraining {model_info['name']} with {self.cfg.hpo._target_}...")
-            
             # Get HPO adapter for this model
             hpo_adapter = get_hpo_adapter(
                 cfg=self.cfg,
                 estimator=model_info['instance'],
                 param_space=model_info['param_space']
             )
-            
             hpo_adapter.fit(X, y)
             
             if hpo_adapter.best_score_ > self.best_score:

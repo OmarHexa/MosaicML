@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from omegaconf import DictConfig
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+from skopt import BayesSearchCV
 # from skopt import BayesSearchCV  # Requires scikit-optimize
 
 class BaseHPOAdapter(ABC):
@@ -87,7 +88,27 @@ class GridSearchAdapter(BaseHPOAdapter):
     def best_params_(self):
         return self.search.best_params_
 
-
+class BayesSearchAdapter(BaseHPOAdapter):
+    """Adapter for BayesSearchCV"""
+    def _init_search(self):
+        self.search = BayesSearchCV(
+            estimator=self.estimator,
+            search_spaces=self.param_space,
+            **self.kwargs
+        )
+    def fit(self, X, y):
+        self.search.fit(X, y)
+        return self
+    @property
+    def best_estimator_(self):
+        return self.search.best_estimator_
+    @property
+    def best_score_(self):
+        return self.search.best_score_
+    @property
+    def best_params_(self):
+        return self.search.best_params_
+    
 def get_hpo_adapter(cfg: DictConfig, estimator, param_space) -> BaseHPOAdapter:
     """Factory for HPO adapters based on configuration"""
     strategy = cfg.hpo._target_.split('.')[-1].lower()
@@ -111,5 +132,12 @@ def get_hpo_adapter(cfg: DictConfig, estimator, param_space) -> BaseHPOAdapter:
         
     elif strategy == 'gridsearchcv':
         return GridSearchAdapter(estimator, param_space, **common_params)
+    elif strategy == 'bayessearchcv':
+        common_params.update({
+            'n_iter': cfg.hpo.n_iter,
+            'random_state': cfg.hpo.get('random_state', None)
+        })
+        return BayesSearchAdapter(estimator, param_space, **common_params)
+        
     else:
         raise ValueError(f"Unsupported HPO strategy: {strategy}")

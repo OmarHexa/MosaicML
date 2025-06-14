@@ -1,5 +1,4 @@
 _target_: sklearn.model_selection.RandomizedSearchCV
-param_space_arg: param_distributions
 n_iter: 20
 cv: 5
 verbose: 2

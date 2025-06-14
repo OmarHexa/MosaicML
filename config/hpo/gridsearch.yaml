@@ -1,5 +1,4 @@
 _target_: sklearn.model_selection.GridSearchCV
-param_space_arg: param_grid
 cv: 5
 scoring: accuracy
 n_jobs: -1
