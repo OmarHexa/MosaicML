@@ -1,6 +1,0 @@
-base:
-  n_iter: 20
-  cv_folds: 5
-  metric: accuracy
-  n_jobs: -1
-  timeout: 120
