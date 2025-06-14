@@ -1,8 +1,8 @@
 defaults:
-  - models:
-      - random_forest
-      - svc
-  - preprocessing: default
-  - hpo: default
+  - training
+  - /models@models.random_forest: random_forest
+  - /models@models.svm: svm
 
-task: classification
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}

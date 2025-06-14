@@ -1,0 +1,14 @@
+# @package models.svm
+_target_: sklearn.svm.SVC
+param_space:
+  C:
+    - 0.1
+    - 1.0
+    - 10.0
+  kernel:
+    - linear
+    - rbf
+    - poly
+  gamma:
+    - scale
+    - auto
