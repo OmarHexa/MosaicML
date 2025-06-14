@@ -31,11 +31,13 @@ class AutoClassifier:
             search = RandomizedSearchCV(
                 estimator=model_info['instance'],
                 param_distributions=model_info['param_space'],
-                n_iter=self.cfg.base.n_iter,
-                cv=self.cfg.base.cv_folds,
-                scoring=self.cfg.base.metric,
-                n_jobs=self.cfg.base.n_jobs,
-                error_score='raise'
+                n_iter=self.cfg.hpo.n_iter,
+                cv=self.cfg.hpo.cv,
+                scoring=self.cfg.hpo.metric,
+                n_jobs=self.cfg.hpo.n_jobs,
+                error_score=self.cfg.hpo.error_score,
+                verbose=self.cfg.hpo.verbose,
+                random_state=self.cfg.hpo.random_state
             )
             
             search.fit(X, y)
@@ -46,10 +48,10 @@ class AutoClassifier:
                 self.best_model_name = model_info['name']
                 self.best_params = search.best_params_
                 
-        print(f"\nBest model: {self.best_model_name} with {self.cfg.base.metric}: {self.best_score:.4f}")
+        print(f"\nBest model: {self.best_model_name} with {self.cfg.hpo.metric}: {self.best_score:.4f}")
         print(f"Best parameters: {self.best_params}")
 
     def evaluate(self, X, y):
-        scorer = get_scorer(self.cfg.base.metric)
+        scorer = get_scorer(self.cfg.hpo.metric)
         return scorer(self.best_model, X, y)
 

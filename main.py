@@ -3,7 +3,7 @@ import joblib
 from omegaconf import DictConfig, OmegaConf
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from auto_classifier import AutoClassifier
+from src.auto_classifier import AutoClassifier
 
 @hydra.main(version_base=None, config_path="config", config_name="main")
 def main(cfg: DictConfig):
@@ -21,7 +21,7 @@ def main(cfg: DictConfig):
     
     # Evaluate
     test_score = auto_clf.evaluate(X_test, y_test)
-    print(f"\nTest {cfg.base.metric}: {test_score:.4f}")
+    print(f"\nTest {cfg.hpo.metric}: {test_score:.4f}")
     
     # Save best model
     joblib.dump(auto_clf.best_model, "best_model.pkl")

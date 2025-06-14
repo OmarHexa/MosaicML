@@ -1,0 +1,16 @@
+
+param_grid:
+  n_estimators: [100, 200, 300]
+  max_depth: [3, 5, 7, 10]
+  min_samples_split: [2, 5, 10]
+  min_samples_leaf: [1, 2, 4]
+  max_features: ['auto', 'sqrt', 'log2']
+  bootstrap: [True, False]
+
+cv: 5
+n_jobs: -1
+verbose: 2
+scoring: 'accuracy'
+refit: True
+return_train_score: True
+error_score: 'raise'

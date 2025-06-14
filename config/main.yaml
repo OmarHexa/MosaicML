@@ -1,8 +1,12 @@
-defaults:
-  - training
-  - /models@models.random_forest: random_forest
-  - /models@models.svm: svm
+# @package _global_
 
-hydra:
-  run:
-    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+# The defaults are ordered:
+# If multiple configs contribute to the same dictionary, the result is the combined dictionary.
+defaults:
+  - hydra: default
+  - paths: default
+  - models: default
+  - hpo: randomsearch
+  - _self_ # this allows overriding the defaults in the main config file
+
+task_name: "iris" # name of the task, used in logging and output directories

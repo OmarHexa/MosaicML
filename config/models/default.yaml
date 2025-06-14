@@ -1,0 +1,8 @@
+# This file defines the default models to be used in the application. 
+# It will include all the models define in this group.
+defaults:
+  - random_forest
+  - svm
+  - _self_
+
+# To override the default models, you can specify a different model in the command line or in a different configuration file.
