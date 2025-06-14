@@ -21,7 +21,7 @@ class AutoClassifier:
             models.append({
                 'instance': model_class(),
                 'param_space': param_space,
-                'name': model_cfg._target_.split('.')[-1]
+                'name': model_name
             })
         return models
 
