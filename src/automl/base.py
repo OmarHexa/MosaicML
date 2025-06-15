@@ -1,4 +1,3 @@
-# automl/base.py
 from abc import ABC, abstractmethod
 import logging
 import numpy as np
@@ -29,7 +28,7 @@ class BaseAutoML(ABC):
         self.best_params: Optional[dict] = None
         self.best_score: float = -np.inf
         self.model_rankings: List[dict] = []
-        
+
         self.metrics_reporter = self._set_metrics_reporter()
         self.initialize()
 

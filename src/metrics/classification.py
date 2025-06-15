@@ -1,5 +1,4 @@
 import logging
-
 import numpy as np
 from omegaconf import DictConfig
 from sklearn.base import BaseEstimator
