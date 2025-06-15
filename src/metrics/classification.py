@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 import logging
 
 import numpy as np
@@ -7,20 +6,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score
 
 
-class BaseMetricsCalculator(ABC):
-    """Abstract base class for metrics calculation"""
-    @abstractmethod
-    def calculate_metrics(self, model: BaseEstimator, X, y, metrics: list[str]) -> dict[str, float]:
-        """Calculate specified metrics for a model"""
-        pass
-        
-    @abstractmethod
-    def get_optimization_metric(self) -> str:
-        """Get the primary metric for optimization"""
-        pass
-
-
-class ClassificationMetricsCalculator(BaseMetricsCalculator):
+class ClassificationMetrics:
     """Metrics calculator for classification tasks"""
     def __init__(self, config: DictConfig):
         self.config = config

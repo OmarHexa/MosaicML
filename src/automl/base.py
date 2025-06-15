@@ -4,11 +4,10 @@ import logging
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from sklearn.base import BaseEstimator
-from typing import List, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 from src.hpo.factory import HPOFactory
 from src.models.base import BaseModelInitializer, SklearnModelInitializer
 from src.tracker.base import BaseExperimentTracker
-from src.metrics.base import BaseMetricsCalculator
 
 class BaseAutoML(ABC):
     """Base AutoML class"""
@@ -16,14 +15,12 @@ class BaseAutoML(ABC):
         self,
         config: DictConfig,
         experiment_tracker: BaseExperimentTracker,
-        metrics_calculator: BaseMetricsCalculator,
         logger: logging.Logger,
         model_initializer: BaseModelInitializer = SklearnModelInitializer(),
     ):
         self.config = config
         self.model_initializer = model_initializer
         self.experiment_tracker = experiment_tracker
-        self.metrics_calculator = metrics_calculator
         self.logger = logger
         
         self.models = []
@@ -32,6 +29,9 @@ class BaseAutoML(ABC):
         self.best_params: Optional[dict] = None
         self.best_score: float = -np.inf
         self.model_rankings: List[dict] = []
+        
+        self.metrics_reporter = self._set_metrics_reporter()
+        self.initialize()
 
     @property
     def model_list(self) -> List[str]:
@@ -44,7 +44,7 @@ class BaseAutoML(ABC):
         self.models = self.model_initializer.initialize_models(self.config.models)
         self.logger.info(f"Models initialized: {self.model_list}")
 
-    def _run_hpo(self, model_info: Tuple[str, BaseEstimator, dict], X, y):
+    def search_hyperparameter(self, model_info: Tuple[str, BaseEstimator, dict], X, y) -> dict:
         """Run hyperparameter optimization for a single model"""
         model_name, model, param_space = model_info
         self.logger.info(f"Starting HPO for {model_name}...")
@@ -69,7 +69,7 @@ class BaseAutoML(ABC):
         best_params = optimizer.best_params_
         
         # Calculate metrics
-        metrics = self.metrics_calculator.calculate_metrics(
+        metrics = self.metrics_reporter.calculate_metrics(
             best_model, X, y
         )
         
@@ -87,7 +87,7 @@ class BaseAutoML(ABC):
             "model": best_model,
             "params": best_params,
             "score": best_score,
-            "metrics": metrics
+            "report": metrics
         }
 
     @abstractmethod
@@ -101,8 +101,8 @@ class BaseAutoML(ABC):
         pass
 
     @abstractmethod
-    def generate_report(self) -> str:
-        """Generate model performance report"""
+    def _set_metrics_reporter(self) -> Any:
+        """Set the metrics reporter"""
         pass
 
     def train_final_model(self, X, y):
