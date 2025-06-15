@@ -1,4 +1,4 @@
-_target_: sklearn.model_selection.RandomizedSearchCV
+strategy: RandomizedSearch
 n_iter: 20
 cv: 5
 verbose: 2

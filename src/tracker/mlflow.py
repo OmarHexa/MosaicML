@@ -1,5 +1,5 @@
 from omegaconf import DictConfig
-from tracker.base import BaseExperimentTracker
+from src.tracker.base import BaseExperimentTracker
 
 
 class MLflowExperimentTracker(BaseExperimentTracker):
@@ -8,12 +8,18 @@ class MLflowExperimentTracker(BaseExperimentTracker):
         import mlflow
         self.mlflow = mlflow
         self.config = config
+        
+        # Extract tracking configuration
+        self.tracking_uri = self.config.get("tracking_uri", "file:/mlruns")
+        self.experiment_name = self.config.get("experiment_name", "automl_experiment")
+        
         self._setup()
         
     def _setup(self):
-        self.mlflow.set_tracking_uri(self.config.tracking_uri)
-        self.mlflow.set_experiment(self.config.experiment_name)
-        self.mlflow.start_run()
+        """Initialize MLflow tracking"""
+        self.mlflow.set_tracking_uri(self.tracking_uri)
+        self.mlflow.set_experiment(self.experiment_name)
+        self.active_run = self.mlflow.start_run()
         
     def log_model_run(self, model_name: str, params: dict, metrics: dict, model_type: str):
         with self.mlflow.start_run(nested=True, run_name=model_name):
@@ -28,3 +34,8 @@ class MLflowExperimentTracker(BaseExperimentTracker):
         
     def log_artifact(self, artifact_path: str, artifact_name: str):
         self.mlflow.log_artifact(artifact_path, artifact_name)
+        
+    def __del__(self):
+        """Ensure the MLflow run is properly closed"""
+        if hasattr(self, 'active_run'):
+            self.mlflow.end_run()

@@ -1,9 +1,10 @@
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import RandomizedSearchCV
-from hpo.base import BaseHPO, HPOFactory
+from .base import BaseHPO
+from .factory import HPOFactory
 
 
-@HPOFactory.register('randomsearch')
+@HPOFactory.register('randomizedsearch')
 class RandomizedSearch(BaseHPO):
     """Adapter for RandomizedSearchCV"""
     def __init__(self, estimator: BaseEstimator, param_space: dict, **hpo_params):

@@ -6,9 +6,17 @@ defaults:
   - hydra: default
   - paths: default
   - models: default
-  - hpo: bayesian_search
+  - hpo: randomsearch
   - _self_ # this allows overriding the defaults in the main config file
 
 task_name: "iris" # name of the task, used in logging and output directories
 
-metric: ${hpo.scoring}
+metrics:
+  objective: f1_macro
+  report: [accuracy, f1_macro, roc_auc]
+
+tracking:
+  _target_: src.tracker.mlflow.MLflowExperimentTracker
+  config:
+    tracking_uri: "file:${paths.output_dir}/mlruns"  # Now nested under config
+    experiment_name: "automl_classification"

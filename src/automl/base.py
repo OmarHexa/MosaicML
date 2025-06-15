@@ -2,27 +2,28 @@
 from abc import ABC, abstractmethod
 import logging
 import numpy as np
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from sklearn.base import BaseEstimator
 from typing import List, Tuple, Optional
-from hpo.base import HPOFactory
-from src.models import BaseModelInitializer
-from src.tracker import BaseExperimentTracker
+from src.hpo.factory import HPOFactory
+from src.models.base import BaseModelInitializer, SklearnModelInitializer
+from src.tracker.base import BaseExperimentTracker
+from src.metrics.base import BaseMetricsCalculator
 
 class BaseAutoML(ABC):
     """Base AutoML class"""
     def __init__(
         self,
         config: DictConfig,
-        model_initializer: BaseModelInitializer,
         experiment_tracker: BaseExperimentTracker,
-        # metrics_calculator: BaseMetricsCalculator,
-        logger: logging.Logger
+        metrics_calculator: BaseMetricsCalculator,
+        logger: logging.Logger,
+        model_initializer: BaseModelInitializer = SklearnModelInitializer(),
     ):
         self.config = config
         self.model_initializer = model_initializer
         self.experiment_tracker = experiment_tracker
-        # self.metrics_calculator = metrics_calculator
+        self.metrics_calculator = metrics_calculator
         self.logger = logger
         
         self.models = []
@@ -49,32 +50,35 @@ class BaseAutoML(ABC):
         self.logger.info(f"Starting HPO for {model_name}...")
         
         # Create HPO adapter
-        hpo_adapter = HPOFactory.get_optimizer(
-            name=self.config.hpo.type,
-            estimator=model,
+        hpo_config = OmegaConf.to_container(self.config.hpo, resolve=True)
+
+        strategy = hpo_config.pop('strategy', 'randomizedsearch')
+        optimizer = HPOFactory.get_optimizer(
+            name=strategy,
+            estimator=model(),
             param_space=param_space,
-            **self.config.hpo
+            **hpo_config
         )
         
         # Run optimization
-        hpo_adapter.fit(X, y)
+        optimizer.fit(X, y)
         
         # Get results
-        best_model = hpo_adapter.best_estimator_
-        best_score = hpo_adapter.best_score_
-        best_params = hpo_adapter.best_params_
+        best_model = optimizer.best_estimator_
+        best_score = optimizer.best_score_
+        best_params = optimizer.best_params_
         
         # Calculate metrics
-        # metrics = self.metrics_calculator.calculate_metrics(
-        #     best_model, X, y, self.config.metrics
-        # )
+        metrics = self.metrics_calculator.calculate_metrics(
+            best_model, X, y
+        )
         
         # Log to experiment tracker
-        model_type = type(model).__module__.split('.')[0]  # Get library name
+        model_type = model.__module__.split('.')[0]  # Get library name
         self.experiment_tracker.log_model_run(
             model_name=model_name,
             params=best_params,
-            # metrics=metrics,
+            metrics=metrics,
             model_type=model_type
         )
         
@@ -83,7 +87,7 @@ class BaseAutoML(ABC):
             "model": best_model,
             "params": best_params,
             "score": best_score,
-            # "metrics": metrics
+            "metrics": metrics
         }
 
     @abstractmethod

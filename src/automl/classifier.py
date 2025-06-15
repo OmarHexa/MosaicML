@@ -27,7 +27,7 @@ class AutoClassifier(BaseAutoML):
         
         # Log best model
         metrics = self.metrics_calculator.calculate_metrics(
-            self.best_model, X, y, self.config.metrics
+            self.best_model, X, y
         )
         self.experiment_tracker.log_final_model(
             model_name=self.best_model_name,

@@ -1,4 +1,4 @@
-_target_: sklearn.model_selection.GridSearchCV
+strategy: GridSearch
 cv: 5
 scoring: accuracy
 n_jobs: -1

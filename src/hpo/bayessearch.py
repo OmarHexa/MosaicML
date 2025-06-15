@@ -1,6 +1,7 @@
 from sklearn.base import BaseEstimator
 from skopt import BayesSearchCV
-from hpo.base import BaseHPO, HPOFactory
+from .base import BaseHPO
+from .factory import HPOFactory
 
 
 @HPOFactory.register('bayessearch')

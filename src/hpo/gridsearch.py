@@ -1,7 +1,7 @@
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV
-from hpo.base import BaseHPO, HPOFactory
-
+from .base import BaseHPO
+from .factory import HPOFactory
 
 @HPOFactory.register('gridsearch')
 class GridSearch(BaseHPO):

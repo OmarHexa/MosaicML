@@ -1,4 +1,4 @@
-_target_: skopt.BayesSearchCV
+strategy: BayesSearch
 n_iter: 50
 cv: 5
 scoring: accuracy
