@@ -1,18 +1,27 @@
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from sklearn.base import BaseEstimator
 
 
+class RegistryBase(ABCMeta):
+    REGISTRY = {}
 
-class BaseHPO(ABC):
+    def __new__(mcs, name, bases,namespace, **kwargs):
+        new_cls = super().__new__(mcs, name, bases,namespace, **kwargs)
+        reg_name = new_cls.__name__.lower()
+        if reg_name not in mcs.REGISTRY and "base" not in name.lower():
+            mcs.REGISTRY[reg_name] = new_cls
+        return new_cls
+    @classmethod
+    def get_registry(cls):
+        return dict(cls.REGISTRY)
+
+    @classmethod
+    def get(cls, name):
+        return cls.REGISTRY[name]
+    
+class BaseHPO(ABC,metaclass=RegistryBase):
     """Abstract base class for HPO adapters"""
-    @abstractmethod
-    def __init__(self, estimator: BaseEstimator, param_space: dict, **hpo_params):
-        if not hasattr(estimator, 'fit') or not callable(getattr(estimator, 'fit')):
-            raise ValueError("Estimator must have a 'fit' method")
-        if not hasattr(estimator, 'predict') or not callable(getattr(estimator, 'predict')):
-            raise ValueError("Estimator must have a 'predict' method")
-        pass
-        
+
     @abstractmethod
     def fit(self, X, y):
         """Execute hyperparameter optimization"""
@@ -32,4 +41,3 @@ class BaseHPO(ABC):
     @abstractmethod
     def best_params_(self) -> dict:
         pass
-
