@@ -1,4 +1,4 @@
-from .base import RegistryBase
+from .registry import RegistryBase
 
 class HPOFactory:
     @staticmethod

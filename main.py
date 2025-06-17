@@ -3,7 +3,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from src.automl.classifier import AutoClassifier
+from automl import AutoClassifier
 
 @hydra.main(version_base=None, config_path="config", config_name="main")
 def main(cfg: DictConfig):

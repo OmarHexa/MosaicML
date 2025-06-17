@@ -1,5 +1,5 @@
 from omegaconf import DictConfig
-from src.tracker.base import BaseExperimentTracker
+from automl.tracker.base import BaseExperimentTracker
 
 
 class MLflowExperimentTracker(BaseExperimentTracker):

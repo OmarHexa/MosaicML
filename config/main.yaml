@@ -16,7 +16,7 @@ metrics:
   report: [accuracy, f1_macro, roc_auc]
 
 tracking:
-  _target_: src.tracker.mlflow.MLflowExperimentTracker
+  _target_: automl.tracker.mlflow.MLflowExperimentTracker
   config:
     tracking_uri: "file:${paths.output_dir}/mlruns"  # Now nested under config
     experiment_name: "automl_classification"
