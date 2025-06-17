@@ -1,3 +1,3 @@
-from .sklearn import SklearnModelInitializer
+from .base import ModelFactory
 
-__all__ = [ 'SklearnModelInitializer']
+__all__ = [ 'ModelFactory']

@@ -2,7 +2,9 @@ from abc import ABC, abstractmethod
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from skopt import BayesSearchCV
-from automl.core.registry import RegistryBase
+from .factory import RegistryBase
+
+
 
 class BaseHPO(ABC,metaclass=RegistryBase):
     """Abstract base class for HPO adapters"""
@@ -27,6 +29,7 @@ class BaseHPO(ABC,metaclass=RegistryBase):
     @abstractmethod
     def best_params_(self) -> dict:
         pass
+
 class BayesSearch(BaseHPO):
     """Adapter for BayesSearchCV"""
     def __init__(self, estimator: BaseEstimator, param_space: dict, **hpo_params):

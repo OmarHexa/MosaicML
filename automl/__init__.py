@@ -1,5 +1,4 @@
-from .hpo import BayesSearch, GridSearch, RandomizedSearch
-from .models import SklearnModelInitializer
-from .core import AutoClassifier, HPOFactory
+from .hpo import BayesSearch, GridSearch, RandomizedSearch, HPOFactory
+from .core import AutoClassifier
 
-__all__ = ['BayesSearch', 'GridSearch', 'RandomizedSearch', 'SklearnModelInitializer', 'AutoClassifier', 'HPOFactory']
+__all__ = ['BayesSearch', 'GridSearch', 'RandomizedSearch', 'AutoClassifier', 'HPOFactory']

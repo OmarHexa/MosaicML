@@ -1,63 +1,56 @@
-from automl.metrics.classification import ClassificationMetrics
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 import logging
-import numpy as np
+from typing import Any
 from omegaconf import DictConfig, OmegaConf
+import pandas as pd
 from sklearn.base import BaseEstimator
-from typing import Any, List, Tuple, Optional
-from automl.models.sklearn import BaseModelInitializer, SklearnModelInitializer
+from automl.metrics.base import BaseMetricManager
+from automl.metrics.classification import ClassificationMetricManager
 from automl.tracker.base import BaseExperimentTracker
-from .factory import HPOFactory
+from ..hpo.factory import HPOFactory
+from ..models import ModelFactory
+@dataclass(order=True)
+class OptimizedModelResult:
+    sort_index: float = field(init=False, repr=False)
+    score: float
+    name: str
+    best_params: dict
+    model: Any
+    metrics: dict
 
+    def __post_init__(self):
+        # For sorting: Higher score is better
+        self.sort_index = -self.score
 class BaseAutoML(ABC):
     """Base AutoML class"""
     def __init__(
         self,
         config: DictConfig,
-        experiment_tracker: BaseExperimentTracker,
+        model_tracker: BaseExperimentTracker,
         logger: logging.Logger,
-        model_initializer: BaseModelInitializer = SklearnModelInitializer(),
     ):
-        self.config = config
-        self.model_initializer = model_initializer
-        self.experiment_tracker = experiment_tracker
-        self.logger = logger
-        
-        self.models = []
-        self.best_model: Optional[BaseEstimator] = None
-        self.best_model_name: Optional[str] = None
-        self.best_params: Optional[dict] = None
-        self.best_score: float = -np.inf
-        self.model_rankings: List[dict] = []
+        self.cfg: OmegaConf = config
+        self.hpo_config:dict = OmegaConf.to_container(self.cfg.hpo, resolve=True)
+        self.models_config:dict = OmegaConf.to_container(self.cfg.models, resolve=True)
+        self.model_tracker = model_tracker
+        self.logger:logging.Logger = logger
+        self.best_model: BaseEstimator = None
+        self.best_model_name: str = None
+        self.metric_manager: BaseMetricManager = self._init_metrics()
+        self.optimized_models: list[OptimizedModelResult] = []
 
-        self.metrics_reporter = self._set_metrics_reporter()
-        self.initialize()
-
-    @property
-    def model_list(self) -> List[str]:
-        """Return names of all models to be tested"""
-        return [name for name, _, _ in self.models]
-
-    def initialize(self):
-        """Initialize all models"""
-        self.logger.info("Initializing models...")
-        self.models = self.model_initializer.initialize_models(self.config.models)
-        self.logger.info(f"Models initialized: {self.model_list}")
-
-    def search_hyperparameter(self, model_info: Tuple[str, BaseEstimator, dict], X, y) -> dict:
+    def optimize_hyperparameters(self, model_name: str,model_info: dict, X, y) -> OptimizedModelResult:
         """Run hyperparameter optimization for a single model"""
-        model_name, model, param_space = model_info
         self.logger.info(f"Starting HPO for {model_name}...")
-        
-        # Create HPO adapter
-        hpo_config = OmegaConf.to_container(self.config.hpo, resolve=True)
-
-        strategy = hpo_config.pop('strategy', 'randomizedsearch')
-        optimizer = HPOFactory.get_optimizer(
+        model,param_space  = ModelFactory.get(model_info)
+        # remove the strategy from hpo_config
+        strategy = self.hpo_config.pop('strategy', 'randomizedsearch')
+        optimizer = HPOFactory.get(
             name=strategy,
             estimator=model(),
             param_space=param_space,
-            **hpo_config
+            **self.hpo_config
         )
         
         # Run optimization
@@ -69,43 +62,37 @@ class BaseAutoML(ABC):
         best_params = optimizer.best_params_
         
         # Calculate metrics
-        metrics = self.metrics_reporter.calculate_metrics(
+        metrics = self.metric_manager(
             best_model, X, y
         )
         
         # Log to experiment tracker
         model_type = model.__module__.split('.')[0]  # Get library name
-        self.experiment_tracker.log_model_run(
+        self.model_tracker.log_model_run(
             model_name=model_name,
             params=best_params,
             metrics=metrics,
             model_type=model_type
         )
         
-        return {
-            "model_name": model_name,
-            "model": best_model,
-            "params": best_params,
-            "score": best_score,
-            "report": metrics
-        }
+        return OptimizedModelResult(
+        name=model_name,
+        score=best_score,
+        best_params=best_params,
+        model=best_model,
+        metrics=metrics,
+        )
+
+    @abstractmethod
+    def _init_metrics(self):
+        pass
 
     @abstractmethod
     def fit(self, X, y):
         """Run full AutoML process"""
         pass
 
-    @abstractmethod
-    def evaluate(self, X, y) -> dict[str, float]:
-        """Evaluate best model on new data"""
-        pass
-
-    @abstractmethod
-    def _set_metrics_reporter(self) -> Any:
-        """Set the metrics reporter"""
-        pass
-
-    def train_final_model(self, X, y):
+    def fit_best_model(self, X, y):
         """Train best model on full dataset"""
         if not self.best_model:
             raise ValueError("No best model selected. Run fit() first.")
@@ -113,51 +100,40 @@ class BaseAutoML(ABC):
         self.logger.info(f"Training final model ({self.best_model_name}) on full dataset...")
         self.best_model.fit(X, y)
         return self.best_model
-class AutoClassifier(BaseAutoML):
-    """Concrete AutoML implementation for classification"""
-    def _set_metrics_reporter(self):
-        return ClassificationMetrics(self.config.metrics)
     
-    def fit(self, X, y):
-        # Run HPO for each model
-        for model_info in self.models:
-            try:
-                result = self.search_hyperparameter(model_info, X, y)
-                self.model_rankings.append(result)
-                # Update best model
-                opt_metric = self.metrics_reporter.get_optimization_metric()
-                score = result['report'][opt_metric]     
-                if score > self.best_score:
-                    self.best_score = score
-                    self.best_model = result['model']
-                    self.best_model_name = result['model_name']
-                    self.best_params = result['params']
-            except Exception as e:
-                self.logger.error(f"HPO failed for {model_info[0]}: {str(e)}")
-        # Verify we have a best model
-        if self.best_model is None:
-            raise ValueError("No valid models were successfully trained")
-        
-        best_result = next(
-        r for r in self.model_rankings 
-        if r['model_name'] == self.best_model_name
-    )
-        self.experiment_tracker.log_final_model(
-        model_name=self.best_model_name,
-        params=self.best_params,
-        metrics=best_result['report']
-    )
-        
-        # Sort rankings by optimization metric
-        opt_metric = self.metrics_reporter.get_optimization_metric()
-        self.model_rankings.sort(key=lambda x: x['report'][opt_metric], reverse=True)
-        
-        return self
-
     def evaluate(self, X, y) -> dict[str, float]:
         if not self.best_model:
             raise ValueError("No best model selected. Run fit() first.")
             
-        return self.metrics_reporter.calculate_metrics(
-            self.best_model, X, y
-        )
+        return self.metric_manager(self.best_model, X, y)
+    def get_leaderboard(self) -> pd.DataFrame:
+        return pd.DataFrame([{
+            'model': r.name,
+            'score': r.score,
+            'metrics': r.metrics,
+            'params': r.best_params
+        } for r in self.optimized_models])
+    
+class AutoClassifier(BaseAutoML):
+    """Concrete AutoML implementation for classification"""
+    
+    def fit(self, X, y):
+        # Run HPO for each model
+        for name, model_info in self.models_config.items():
+            try:
+                result = self.optimize_hyperparameters(name,model_info, X, y)
+                self.optimized_models.append(result)
+                # Update best model
+            except Exception as e:
+                self.logger.error(f"HPO failed for {model_info[0]}: {str(e)}")
+        self.optimized_models.sort()
+        self.best_model = self.optimized_models[0].model
+        self.best_model_name = self.optimized_models[0].name
+        # Verify we have a best model
+        if self.best_model is None:
+            raise ValueError("No valid models were successfully trained")
+        return self
+
+    def _init_metrics(self):
+        metric_config = self.cfg.metrics
+        return ClassificationMetricManager(metric_config)

@@ -1,3 +1,4 @@
-from .sklearn import BaseHPO, BayesSearch,GridSearch, RandomizedSearch
+from .optimzer import BayesSearch,GridSearch, RandomizedSearch
+from .factory import HPOFactory
 
-__all__ = ['BaseHPO', 'BayesSearch', 'RegistryBase','GridSearch', 'RandomizedSearch']
+__all__ = ['BayesSearch','GridSearch', 'RandomizedSearch', 'HPOFactory']
