@@ -82,6 +82,12 @@ class BaseAutoML(ABC):
         model=best_model,
         metrics=metrics,
         )
+    @property
+    def best_model(self):
+        """Return best model"""
+        if not self.best_model:
+            raise ValueError("No best model selected. Run fit() first.")
+        return self.best_model
 
     @abstractmethod
     def _init_metrics(self):
@@ -99,13 +105,14 @@ class BaseAutoML(ABC):
         
         self.logger.info(f"Training final model ({self.best_model_name}) on full dataset...")
         self.best_model.fit(X, y)
-        return self.best_model
+        return self
     
     def evaluate(self, X, y) -> dict[str, float]:
         if not self.best_model:
             raise ValueError("No best model selected. Run fit() first.")
             
         return self.metric_manager(self.best_model, X, y)
+    
     def get_leaderboard(self) -> pd.DataFrame:
         return pd.DataFrame([{
             'model': r.name,

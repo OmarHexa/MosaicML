@@ -25,7 +25,7 @@ def main(cfg: DictConfig):
     automl.fit(X_train, y_train)
 
     # Train final model on full data
-    automl.train_final_model(X_train, y_train)
+    automl.fit_best_model(X_train, y_train)
     
     # Evaluate on test set
     test_metrics = automl.evaluate(X_test, y_test)
