@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 from automl.metrics.base import BaseMetricManager
 from automl.metrics.classification import ClassificationMetricManager
+from automl.metrics.regression import RegressionMetricManager
 from automl.tracker.base import BaseExperimentTracker
 from ..hpo.factory import HPOFactory
 from ..models import ModelFactory
@@ -144,3 +145,27 @@ class AutoClassifier(BaseAutoML):
     def _init_metrics(self):
         metric_config = self.cfg.metrics
         return ClassificationMetricManager(metric_config)
+
+class AutoRegressor(BaseAutoML):
+    """Concrete AutoML implementation for classification"""
+    
+    def fit(self, X, y):
+        # Run HPO for each model
+        for name, model_info in self.models_config.items():
+            try:
+                result = self.optimize_hyperparameters(name,model_info, X, y)
+                self.optimized_models.append(result)
+                # Update best model
+            except Exception as e:
+                self.logger.error(f"HPO failed for {model_info[0]}: {str(e)}")
+        self.optimized_models.sort()
+        self.best_model = self.optimized_models[0].model
+        self.best_model_name = self.optimized_models[0].name
+        # Verify we have a best model
+        if self.best_model is None:
+            raise ValueError("No valid models were successfully trained")
+        return self
+
+    def _init_metrics(self):
+        metric_config = self.cfg.metrics
+        return RegressionMetricManager(metric_config)
